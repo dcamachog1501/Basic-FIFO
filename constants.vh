@@ -1,7 +1,7 @@
 
 //FIFO DEFAULT VALUES
 parameter FIFO_LENGTH      = 16; 
-parameter FIFO_WIDTH       = 1041;
+parameter FIFO_WIDTH       = 32;
 
 
 // SIZE SELECTION PARAMETERS (Used for size selection accross the implementation)
