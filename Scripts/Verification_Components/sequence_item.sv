@@ -1,6 +1,3 @@
-
-
-
 `include "../constants.vh"   // Include shared constants (FIFO_LENGTH, FIFO_WIDTH)
 
 // UVM sequence item class for FIFO transactions
@@ -29,8 +26,13 @@ class FIFO_Seq_Item #(WIDTH=FIFO_WIDTH) extends uvm_sequence_item;
 
     // Convert transaction content to string for debug/printing
     function string convert2string();
-        return $sformat(
-            "TRANS CONTENT -- LOAD : %0b , POP : %0b , EMPTY : %0b , FULL : %0b , VALUE_IN : %0h , VALUE_OUT : %0h"
+        return $sformatf(
+            "TRANS CONTENT -- LOAD : %0b , 
+                              POP : %0b , 
+                              EMPTY : %0b , 
+                              FULL : %0b , 
+                              VALUE_IN : %0h , 
+                              VALUE_OUT : %0h"
         );
     endfunction
 
