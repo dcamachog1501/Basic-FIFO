@@ -33,14 +33,8 @@ module FIFO #(
             VALUE_OUT   <= 0;
         end
         else begin
-            // LOAD operation: push new value if not FULL
-            if (LOAD & !FULL) begin
-                slots[write_ptr] <= VALUE_IN;
-                taken_slots      <= taken_slots + 1;
-                write_ptr        <= (write_ptr == LENGTH-1)? 0 : (write_ptr+1) ;
-            end
 
-            // POP operation: retrieve oldest value if not EMPTY
+             // POP operation: retrieve oldest value if not EMPTY
             if (POP) begin
                 if (!EMPTY) begin
                     VALUE_OUT    <= slots[read_ptr]; // Output oldest slot
@@ -51,7 +45,13 @@ module FIFO #(
                     VALUE_OUT    <= 0; // If empty, output zero
                 end
             end
+
+            // LOAD operation: push new value if not FULL
+            if (LOAD & !FULL) begin
+                slots[write_ptr] <= VALUE_IN;
+                taken_slots      <= taken_slots + 1;
+                write_ptr        <= (write_ptr == LENGTH-1)? 0 : (write_ptr+1) ;
+            end
         end
     end
-
 endmodule
