@@ -39,8 +39,19 @@ class FIFO_Test extends uvm_test;
         super.run_phase(phase);
 
         phase.raise_objection(this);
+        
+        // DUT Restart Sequence (Assert RST for 5 posedge)
+        `uvm_info("TEST", "Restarting DUT for 5 Cycles ...", UVM_LOW);
 
         seq = FIFO_Sequence::type_id::create("sequence");
+        seq.reset_flag = 1;
+        seq.trans_amount = 5;
+        seq.start(env.agent.sequencer);
+
+        // Main Sequence (Main Stimulus Generation Sequence)
+        `uvm_info("TEST", "Executing Main Stimulus Sequence ...", UVM_LOW);
+
+        seq.reset_flag = 0;
         seq.trans_amount = 32;
         seq.start(env.agent.sequencer);
 

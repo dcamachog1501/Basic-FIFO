@@ -2,13 +2,11 @@
 // Top-level Testbench (top_tb)
 // Instantiates DUT, interface, clock, and launches UVM test.
 //------------------------------------------------------------
+`include "uvm_macros.svh"             // UVM macros for registration/messaging
 
-`include "uvm_macros.svh"   // UVM macros
+import uvm_pkg::*;                    // Import UVM package
+import fifo_config_pkg::*;
 
-import uvm_pkg::*;          // UVM base package
-import fifo_config_pkg::*;  // FIFO configuration parameters
-
-// Include UVM component definitions
 `include "interface.sv"
 `include "sequence_item.sv"
 `include "sequencer.sv"
@@ -25,29 +23,37 @@ module top_tb;
     // Clock signal
     bit CLK;
 
-    // Interface instantiation
+    // Instantiate interface and bind clock
     FIFO_if vif(.CLK(CLK));
 
-    // DUT instantiation
+    // Instantiate DUT and connect to interface modport
     FIFO fifo (.inf(vif.dut_mp));
 
+    //--------------------------------------------------------
     // Clock generation: 20 time unit period
+    //--------------------------------------------------------
     initial begin
         CLK = 0;
         forever #10 CLK = ~CLK;
     end
 
+    //--------------------------------------------------------
     // UVM configuration and test invocation
+    //--------------------------------------------------------
     initial begin
-        uvm_config_db#(virtual FIFO_if)::set(null, "*", "fifo_if", vif);
+        // Provide virtual interface to UVM components via config DB
+        uvm_config_db#(virtual FIFO_if)::set(null,"*","fifo_if",vif);
+		
+        // Run specified UVM test
         run_test("FIFO_Test");
+
+        // End simulation cleanly
         $finish();
     end
-
-    // Waveform dump setup
+  
     initial begin
-        $dumpfile("dump.vcd");
-        $dumpvars;
-    end
+          $dumpvars;
+          $dumpfile("dump.vcd");
+     end
 
 endmodule

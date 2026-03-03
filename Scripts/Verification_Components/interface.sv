@@ -19,7 +19,7 @@ interface FIFO_if #(
 
     // Driver clocking block
     clocking drv_cb @(posedge CLK);
-        output LOAD, POP, VALUE_IN, VALID_DRV;
+        output LOAD, POP, VALUE_IN, VALID_DRV,RST;
     endclocking
 
     // Monitor clocking block

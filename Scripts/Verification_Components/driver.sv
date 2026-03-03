@@ -24,26 +24,45 @@ class FIFO_Driver extends uvm_driver #(FIFO_Seq_Item#(FIFO_WIDTH));
         if (!uvm_config_db#(virtual FIFO_if)::get(null, "", "fifo_if", fifo_if))
             `uvm_fatal("DRIVER", "Interface could not be retrieved");
     endfunction
-
+    
     // Run phase: main driver loop
     task run_phase(uvm_phase phase);
         super.run_phase(phase);
 
         forever begin
-            if (fifo_if.RST)
-                reset_if();
-            else begin
-                FIFO_Seq_Item seq_item;
-                seq_item_port.try_next_item(seq_item);
+            
+            FIFO_Seq_Item seq_item;
+            seq_item_port.try_next_item(seq_item);
 
-                if (seq_item) begin
-                    drive_if(seq_item);
-                    seq_item_port.item_done();
-                end
+            if (seq_item) begin
+                
+                if(seq_item.RST)
+                    reset_dut();
+
                 else
-                    release_if();
+                	drive_if(seq_item);
+                
+              	seq_item_port.item_done();
             end
+            else
+                release_if();
         end
+    endtask
+
+    task reset_dut();
+
+        `uvm_info("DRIVER","Resseting DUT (Asserting RST signal)",UVM_LOW)
+
+        fifo_if.drv_mp.drv_cb.RST <= 1;
+
+        this.reset_if();
+
+        @(fifo_if.drv_mp.drv_cb);
+
+        fifo_if.drv_mp.drv_cb.RST <= 0;
+        
+        `uvm_info("DRIVER","Reset DONE (Deasserting RST signal)",UVM_LOW)
+
     endtask
 
     // Reset interface signals
@@ -54,6 +73,7 @@ class FIFO_Driver extends uvm_driver #(FIFO_Seq_Item#(FIFO_WIDTH));
         fifo_if.drv_mp.drv_cb.POP       <= 0;
         fifo_if.drv_mp.drv_cb.VALUE_IN  <= 0;
         fifo_if.drv_mp.drv_cb.VALID_DRV <= 0;
+
     endtask
 
     // Drive interface with sequence item
