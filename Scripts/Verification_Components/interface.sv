@@ -19,12 +19,14 @@ interface FIFO_if #(
 
     // Driver clocking block
     clocking drv_cb @(posedge CLK);
-        output LOAD, POP, VALUE_IN, VALID_DRV;
+      //Applying Outputs in the Re-NBA region
+      output #0 LOAD, POP, VALUE_IN, VALID_DRV,RST;
     endclocking
 
     // Monitor clocking block
     clocking mon_cb @(posedge CLK);
-        input LOAD, POP, VALUE_IN, EMPTY, FULL, VALUE_OUT, VALID_DRV;
+      	// Sampling Inputs in the Observed Region
+        input #0 LOAD, POP, VALUE_IN, EMPTY, FULL, VALUE_OUT, VALID_DRV; 
     endclocking
 
     // Modports
