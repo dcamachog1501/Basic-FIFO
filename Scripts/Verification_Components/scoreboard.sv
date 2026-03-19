@@ -4,6 +4,8 @@
 // Compares DUT outputs against expected results and logs errors.
 //------------------------------------------------------------
 
+`include "fifo_ref_model.sv"
+
 class FIFO_Scoreboard extends uvm_scoreboard;
 
     // Factory registration
@@ -12,8 +14,7 @@ class FIFO_Scoreboard extends uvm_scoreboard;
     // Analysis implementation port
     uvm_analysis_imp #(FIFO_Seq_Item#(FIFO_WIDTH), FIFO_Scoreboard) sb_analysis_imp;
 
-    // Reference FIFO queue (bounded to FIFO_LENGTH)
-    bit [FIFO_WIDTH-1:0] sb_queue [$:FIFO_LENGTH];
+    FIFO_Ref_Model sb_queue;
 
     // Error reasons dictionary
     string reasons_dict [string];
@@ -28,6 +29,7 @@ class FIFO_Scoreboard extends uvm_scoreboard;
     function new(string name = "scoreboard", uvm_component parent);
         super.new(name, parent);
 
+        sb_queue = new();
         reasons_dict = '{
             "POP_NOT_FULL"            : "Popping from FIFO raised the FULL flag",
             "POP_EMPTY_NOT_EMPTY"     : "Popping from FIFO didn't raise EMPTY flag (FIFO is EMPTY)",
@@ -97,17 +99,17 @@ class FIFO_Scoreboard extends uvm_scoreboard;
         output_seq_item.VALUE_IN = seq_item.VALUE_IN;
 
         if (seq_item.POP) begin
-            last_popped_value    = (is_empty()) ? 0 : sb_queue.pop_front();
+            last_popped_value    = (sb_queue.is_empty()) ? 0 : sb_queue.pop_front();
             output_seq_item.VALUE_OUT = last_popped_value;
-            output_seq_item.EMPTY     = is_empty();
-            output_seq_item.FULL      = is_full();
+            output_seq_item.EMPTY     = sb_queue.is_empty();
+            output_seq_item.FULL      = sb_queue.is_full();
         end
 
         if (seq_item.LOAD) begin
             sb_queue.push_back(seq_item.VALUE_IN);
             output_seq_item.VALUE_OUT = last_popped_value;
-            output_seq_item.FULL      = is_full();
-            output_seq_item.EMPTY     = is_empty();
+            output_seq_item.FULL      = sb_queue.is_full();
+            output_seq_item.EMPTY     = sb_queue.is_empty();
         end
 
         return output_seq_item;
@@ -118,10 +120,10 @@ class FIFO_Scoreboard extends uvm_scoreboard;
         if (seq_item.FULL)
             errors_queue.push_back("POP_NOT_FULL");
 
-        if (is_empty() && ~seq_item.EMPTY)
+        if (sb_queue.is_empty() && ~seq_item.EMPTY)
             errors_queue.push_back("POP_EMPTY_NOT_EMPTY");
 
-        if (~is_empty() && seq_item.EMPTY)
+        if (~sb_queue.is_empty() && seq_item.EMPTY)
             errors_queue.push_back("POP_NOT_EMPTY");
 
         if (last_popped_value != seq_item.VALUE_OUT)
@@ -135,10 +137,10 @@ class FIFO_Scoreboard extends uvm_scoreboard;
         if (seq_item.EMPTY)
             errors_queue.push_back("LOAD_NOT_EMPTY");
 
-        if (is_full() && ~seq_item.FULL)
+        if (sb_queue.is_full() && ~seq_item.FULL)
             errors_queue.push_back("LOAD_FULL_NOT_FULL");
 
-        if (~is_full() && seq_item.FULL)
+        if (~sb_queue.is_full() && seq_item.FULL)
             errors_queue.push_back("LOAD_NOT_FULL");
 
         if (last_popped_value != seq_item.VALUE_OUT)
@@ -146,15 +148,4 @@ class FIFO_Scoreboard extends uvm_scoreboard;
 
         return errors_queue.size() == 0;
     endfunction
-
-    // Utility: check if FIFO is empty
-    function bit is_empty();
-        return sb_queue.size() == 0;
-    endfunction
-
-    // Utility: check if FIFO is full
-    function bit is_full();
-        return sb_queue.size() == FIFO_LENGTH;
-    endfunction
-
 endclass
