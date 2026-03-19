@@ -14,6 +14,7 @@ import fifo_config_pkg::*;
 `include "monitor.sv"
 `include "agent.sv"
 `include "scoreboard.sv"
+`include "coverage_collector.sv"
 `include "environment.sv"
 `include "sequence.sv"
 `include "test.sv"
