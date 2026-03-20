@@ -26,6 +26,9 @@ class FIFO_Coverage_Collector #(parameter int WIDTH  = fifo_config_pkg::FIFO_WID
 
     // Flag coverage: EMPTY/FULL values and transitions
     covergroup flag_cg;
+
+        option.per_instance = 1;
+
         flag_EMPTY_cp       : coverpoint eval_seq_item.EMPTY iff (!eval_seq_item.RST);
         flag_FULL_cp        : coverpoint eval_seq_item.FULL  iff (!eval_seq_item.RST);
 
@@ -42,12 +45,18 @@ class FIFO_Coverage_Collector #(parameter int WIDTH  = fifo_config_pkg::FIFO_WID
 
     // Input control coverage: LOAD and POP signals
     covergroup input_control_cg;
+
+        option.per_instance = 1;
+
         input_LOAD_cp : coverpoint eval_seq_item.LOAD iff (!eval_seq_item.RST);
         input_POP_cp  : coverpoint eval_seq_item.POP  iff (!eval_seq_item.RST);
     endgroup
 
     // Reset coverage: flags and outputs under reset
     covergroup reset_cg;
+
+        option.per_instance = 1;
+
         reset_EMPTY_cp      : coverpoint eval_seq_item.EMPTY iff (eval_seq_item.RST) {
             bins EMPTY_HIGH   = {1};
             illegal_bins EMPTY_LOW = {0};
@@ -73,6 +82,9 @@ class FIFO_Coverage_Collector #(parameter int WIDTH  = fifo_config_pkg::FIFO_WID
 
     // Occupancy coverage: bins for queue depth and operation crosses
     covergroup occupancy_cg;
+
+        option.per_instance = 1;
+
         occupancy_cp : coverpoint ref_queue.get_occupancy() iff(!eval_seq_item.RST) {
             bins empty          = {0};
             bins low_occupancy  = {[1:LENGTH/2-1]};
@@ -81,12 +93,25 @@ class FIFO_Coverage_Collector #(parameter int WIDTH  = fifo_config_pkg::FIFO_WID
             bins full_occupancy = {LENGTH};
         }
 
+        occupancy_ops_pop_cp : coverpoint eval_seq_item.POP iff(!eval_seq_item.RST) {
+            bins pop_high = {1};
+        }
+
+        occupancy_ops_load_cp : coverpoint eval_seq_item.LOAD iff(!eval_seq_item.RST) {
+            bins load_high = {1};
+        }
+
         // Cross occupancy with operations
-        cross_occupancy : cross occupancy_cp, eval_seq_item.POP, eval_seq_item.LOAD;
+        cross_pop_occupancy  : cross occupancy_cp, occupancy_ops_pop_cp;
+        cross_load_occupancy : cross occupancy_cp, occupancy_ops_load_cp;
+
     endgroup
 
     // Simultaneous operations coverage: LOAD and POP in same cycle
     covergroup simultaneous_ops_cg;
+
+        option.per_instance = 1;
+
         sim_ops_cp : coverpoint {eval_seq_item.LOAD, eval_seq_item.POP} iff (!eval_seq_item.RST) {
             bins only_pop  = {2'b10};
             bins only_load = {2'b01};
@@ -96,8 +121,15 @@ class FIFO_Coverage_Collector #(parameter int WIDTH  = fifo_config_pkg::FIFO_WID
 
     // Boundary operations coverage: illegal push/pop conditions
     covergroup boundary_ops_cg;
-        load_when_full_cp : coverpoint eval_seq_item.LOAD iff(!eval_seq_item.RST && ref_queue.is_full());
-        pop_when_empty_cp : coverpoint eval_seq_item.POP  iff(!eval_seq_item.RST && ref_queue.is_empty());
+
+        option.per_instance = 1;
+
+        load_when_full_cp : coverpoint eval_seq_item.LOAD iff(!eval_seq_item.RST && ref_queue.is_full()){
+            bins load_high = {1};
+        }
+        pop_when_empty_cp : coverpoint eval_seq_item.POP  iff(!eval_seq_item.RST && ref_queue.is_empty()){
+            bins pop_high  = {1};
+        }
     endgroup
 
     //--------------------------------------------------------
@@ -124,6 +156,14 @@ class FIFO_Coverage_Collector #(parameter int WIDTH  = fifo_config_pkg::FIFO_WID
     function void write(FIFO_Seq_Item t);
         eval_seq_item = t;
 
+        // Sample all covergroups
+        this.flag_cg.sample();
+        this.input_control_cg.sample();
+        this.reset_cg.sample();
+        this.occupancy_cg.sample();
+        this.simultaneous_ops_cg.sample();
+        this.boundary_ops_cg.sample();
+
         if (eval_seq_item.RST)
             this.ref_queue.reset();
         else begin
@@ -134,13 +174,6 @@ class FIFO_Coverage_Collector #(parameter int WIDTH  = fifo_config_pkg::FIFO_WID
                 this.ref_queue.pop_front();
         end
 
-        // Sample all covergroups
-        this.flag_cg.sample();
-        this.input_control_cg.sample();
-        this.reset_cg.sample();
-        this.occupancy_cg.sample();
-        this.simultaneous_ops_cg.sample();
-        this.boundary_ops_cg.sample();
     endfunction
 
     //--------------------------------------------------------
