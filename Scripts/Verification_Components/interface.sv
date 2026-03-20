@@ -26,7 +26,7 @@ interface FIFO_if #(
     // Monitor clocking block
     clocking mon_cb @(posedge CLK);
       	// Sampling Inputs in the Observed Region
-        input #0 LOAD, POP, VALUE_IN, EMPTY, FULL, VALUE_OUT, VALID_DRV; 
+        input #0 RST, LOAD, POP, VALUE_IN, EMPTY, FULL, VALUE_OUT, VALID_DRV; 
     endclocking
 
     // Modports
