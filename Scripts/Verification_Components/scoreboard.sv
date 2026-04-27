@@ -98,18 +98,23 @@ class FIFO_Scoreboard extends uvm_scoreboard;
         output_seq_item.POP      = seq_item.POP;
         output_seq_item.VALUE_IN = seq_item.VALUE_IN;
 
-        if (seq_item.POP) begin
-            last_popped_value    = (sb_queue.is_empty()) ? 0 : sb_queue.pop_front();
-            output_seq_item.VALUE_OUT = last_popped_value;
-            output_seq_item.EMPTY     = sb_queue.is_empty();
-            output_seq_item.FULL      = sb_queue.is_full();
-        end
+        if(seq_item.RST)
+            sb_queue.delete();
+        else
+        begin
+            if (seq_item.POP) begin
+                last_popped_value    = (sb_queue.is_empty()) ? 0 : sb_queue.pop_front();
+                output_seq_item.VALUE_OUT = last_popped_value;
+                output_seq_item.EMPTY     = sb_queue.is_empty();
+                output_seq_item.FULL      = sb_queue.is_full();
+            end
 
-        if (seq_item.LOAD) begin
-            sb_queue.push_back(seq_item.VALUE_IN);
-            output_seq_item.VALUE_OUT = last_popped_value;
-            output_seq_item.FULL      = sb_queue.is_full();
-            output_seq_item.EMPTY     = sb_queue.is_empty();
+            if (seq_item.LOAD) begin
+                sb_queue.push_back(seq_item.VALUE_IN);
+                output_seq_item.VALUE_OUT = last_popped_value;
+                output_seq_item.FULL      = sb_queue.is_full();
+                output_seq_item.EMPTY     = sb_queue.is_empty();
+            end
         end
 
         return output_seq_item;

@@ -16,7 +16,9 @@ import fifo_config_pkg::*;
 `include "scoreboard.sv"
 `include "coverage_collector.sv"
 `include "environment.sv"
-`include "sequence.sv"
+`include "reset_sequence.sv"
+`include "random_sequence.sv"
+`include "boundary_sequence.sv"
 `include "test.sv"
 
 module top_tb;

@@ -12,6 +12,9 @@ class FIFO_Seq_Item #(WIDTH = FIFO_WIDTH) extends uvm_sequence_item;
     bit      [WIDTH-1:0] VALUE_OUT;          // Output data
     bit                  RST;                // Reset Flag
 
+    //At least one operation has to be enabled
+    contraint ops_enable {LOAD || POP;}
+
     // Factory registration and field automation
     `uvm_object_utils_begin(FIFO_Seq_Item#(WIDTH))
         `uvm_field_int(LOAD,      UVM_ALL_ON)
