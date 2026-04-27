@@ -15,7 +15,8 @@ class FIFO_Ref_Model;
 
     // Push a new element to the back of the queue
     function void push_back(bit [FIFO_WIDTH-1:0] value);
-        this.queue.push_back(value);
+        if(!is_full())
+            this.queue.push_back(value);
     endfunction
 
     // Check if the queue is empty

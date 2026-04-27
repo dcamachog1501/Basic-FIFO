@@ -31,15 +31,17 @@ class FIFO_Scoreboard extends uvm_scoreboard;
 
         sb_queue = new();
         reasons_dict = '{
-            "POP_NOT_FULL"            : "Popping from FIFO raised the FULL flag",
-            "POP_EMPTY_NOT_EMPTY"     : "Popping from FIFO didn't raise EMPTY flag (FIFO is EMPTY)",
-            "POP_FULL_STILL_FULL"     : "Popping from full FIFO didn't lower FULL flag",
-            "POP_NOT_EMPTY"           : "Popping from non-empty FIFO raised EMPTY flag (FIFO isn't EMPTY)",
-            "POP_MISMATCH"            : "Popped value didn't match scoreboard value",
-            "LOAD_FULL_NOT_FULL"      : "Loading to FIFO didn't raise FULL flag (FIFO is FULL)",
-            "LOAD_NOT_FULL"           : "Loading intermediate value raised FULL flag (FIFO isn't FULL)",
-            "LOAD_NOT_EMPTY"          : "Loading raised EMPTY flag",
-            "LOAD_OUTPUT_NOT_STEADY"  : "Loading changed output value"
+            "POP_NOT_FULL"           : "Popping from FIFO raised the FULL flag",
+            "POP_EMPTY_NOT_EMPTY"    : "Popping from FIFO didn't raise EMPTY flag (FIFO is EMPTY)",
+            "POP_FULL_STILL_FULL"    : "Popping from full FIFO didn't lower FULL flag",
+            "POP_NOT_EMPTY"          : "Popping from non-empty FIFO raised EMPTY flag (FIFO isn't EMPTY)",
+            "POP_MISMATCH"           : "Popped value didn't match scoreboard value",
+            "LOAD_FULL_NOT_FULL"     : "Loading to FIFO didn't raise FULL flag (FIFO is FULL)",
+            "LOAD_NOT_FULL"          : "Loading intermediate value raised FULL flag (FIFO isn't FULL)",
+            "LOAD_NOT_EMPTY"         : "Loading raised EMPTY flag",
+            "LOAD_OUTPUT_NOT_STEADY" : "Loading changed output value",
+            "NOT_RESET"              : "RST signal HIGH. FIFO not in RESET state",
+            "NOT_CONSISTENT"         : "No operation being performed. FIFO is not keeping the last state consistent."
         };
     endfunction
 
@@ -53,13 +55,29 @@ class FIFO_Scoreboard extends uvm_scoreboard;
     function void write(FIFO_Seq_Item seq_item);
         bit errors_found = 0;
 
+        errors_queue.delete();
+
         FIFO_Seq_Item expected_result = perform_trans(seq_item);
 
-        if (seq_item.POP)
-            errors_found |= !check_pop(seq_item);
+        if(seq_item.RST)
+            errors_found = !check_reset(seq_item);
+        else
+        begin
+            
+            if(!seq_item.POP && !seq_item.LOAD)
+            begin
+                errors_found = !check_consistency(seq_item);
+            end
 
-        if (seq_item.LOAD)
-            errors_found |= !check_load(seq_item);
+            else
+            begin
+                if (seq_item.POP)
+                    errors_found |= !check_pop(seq_item);
+
+                if (seq_item.LOAD)
+                    errors_found |= !check_load(seq_item);
+            end
+        end
 
         if (errors_found)
             print_errors(seq_item, expected_result);
@@ -97,11 +115,23 @@ class FIFO_Scoreboard extends uvm_scoreboard;
         output_seq_item.LOAD     = seq_item.LOAD;
         output_seq_item.POP      = seq_item.POP;
         output_seq_item.VALUE_IN = seq_item.VALUE_IN;
+        output_seq_item.RST      = seq_item.RST;
 
         if(seq_item.RST)
-            sb_queue.delete();
+        begin
+            sb_queue.reset();
+            last_popped_value = 0;
+            output_seq_item.VALUE_OUT = 0;
+            output_seq_item.EMPTY     = 1;
+            output_seq_item.FULL      = 0;
+        end
         else
         begin
+
+            output_seq_item.VALUE_OUT = last_popped_value;
+            output_seq_item.EMPTY     = sb_queue.is_empty();
+            output_seq_item.FULL      = sb_queue.is_full();
+
             if (seq_item.POP) begin
                 last_popped_value    = (sb_queue.is_empty()) ? 0 : sb_queue.pop_front();
                 output_seq_item.VALUE_OUT = last_popped_value;
@@ -112,14 +142,37 @@ class FIFO_Scoreboard extends uvm_scoreboard;
             if (seq_item.LOAD) begin
                 sb_queue.push_back(seq_item.VALUE_IN);
                 output_seq_item.VALUE_OUT = last_popped_value;
-                output_seq_item.FULL      = sb_queue.is_full();
                 output_seq_item.EMPTY     = sb_queue.is_empty();
+                output_seq_item.FULL      = sb_queue.is_full();
             end
+
         end
 
         return output_seq_item;
     endfunction
 
+  function bit check_consistency (FIFO_Seq_Item seq_item);
+    bit is_consistent = seq_item.EMPTY     == sb_queue.is_empty() &&
+                        seq_item.FULL      == sb_queue.is_full()  &&
+                        seq_item.VALUE_OUT == last_popped_value;
+    if(!is_consistent)
+        errors_queue.push_back("NOT_CONSISTENT");
+
+    return is_consistent;
+  endfunction
+
+  function bit check_reset(FIFO_Seq_Item seq_item);
+        bit is_reset =   seq_item.EMPTY &&
+                       ! seq_item.FULL  &&
+                         seq_item.VALUE_OUT == 0;
+
+        if(!is_reset)
+            errors_queue.push_back("NOT_RESET");
+        
+        return is_reset;
+
+    endfunction
+    
     // Check POP behavior
     function bit check_pop(FIFO_Seq_Item seq_item);
         if (seq_item.FULL)
