@@ -12,6 +12,7 @@ class FIFO_Environment extends uvm_env;
     // Sub-components
     FIFO_Agent      agent;
     FIFO_Scoreboard scoreboard;
+    FIFO_Coverage_Collector cov_collector;
 
     // Active/passive configuration flag
     bit is_agent_active;
@@ -27,6 +28,8 @@ class FIFO_Environment extends uvm_env;
 
         agent      = FIFO_Agent::type_id::create("agent", this);
         scoreboard = FIFO_Scoreboard::type_id::create("scoreboard", this);
+        cov_collector = FIFO_Coverage_Collector#(fifo_config_pkg::FIFO_WIDTH,fifo_config_pkg::FIFO_LENGTH)::type_id::create("coverage_collector", this);
+
 
         if (!uvm_config_db#(bit)::get(this, "", "is_agent_active", is_agent_active)) begin
             `uvm_info("ENVIRONMENT","Agent configuration not found, defaulting to ACTIVE",UVM_LOW);
@@ -41,6 +44,7 @@ class FIFO_Environment extends uvm_env;
     function void connect_phase(uvm_phase phase);
         super.connect_phase(phase);
         agent.monitor.mon_analysis_port.connect(scoreboard.sb_analysis_imp);
+        agent.monitor.mon_analysis_port.connect(cov_collector.cov_analysis_imp);
     endfunction
 
 endclass

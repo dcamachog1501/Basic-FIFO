@@ -39,7 +39,8 @@ class FIFO_Monitor extends uvm_monitor;
 
             if (fifo_if.mon_mp.mon_cb.VALID_DRV) begin
                 FIFO_Seq_Item #(FIFO_WIDTH) seq_item =FIFO_Seq_Item#(FIFO_WIDTH)::type_id::create();
-
+				
+              	seq_item.RST       = fifo_if.mon_mp.mon_cb.RST;
                 seq_item.LOAD      = fifo_if.mon_mp.mon_cb.LOAD;
                 seq_item.POP       = fifo_if.mon_mp.mon_cb.POP;
                 seq_item.VALUE_IN  = fifo_if.mon_mp.mon_cb.VALUE_IN;

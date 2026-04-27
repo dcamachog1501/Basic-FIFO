@@ -10,8 +10,10 @@ class FIFO_Test extends uvm_test;
     `uvm_component_utils(FIFO_Test)
 
     // Sub-components
-    FIFO_Environment env;
-    FIFO_Sequence    seq;
+    FIFO_Environment        env;
+    FIFO_Random_Sequence    random_seq;
+    FIFO_Reset_Sequence     reset_seq;
+    FIFO_Boundary_Sequence  boundary_seq;
 
     // Constructor
     function new(string name = "FIFO_Test", uvm_component parent);
@@ -43,17 +45,26 @@ class FIFO_Test extends uvm_test;
         // DUT Restart Sequence (Assert RST for 5 posedge)
         `uvm_info("TEST", "Restarting DUT for 5 Cycles ...", UVM_LOW);
 
-        seq = FIFO_Sequence::type_id::create("sequence");
-        seq.reset_flag = 1;
-        seq.trans_amount = 5;
-        seq.start(env.agent.sequencer);
+        reset_seq = FIFO_Reset_Sequence::type_id::create("reset_sequence");
+        reset_seq.trans_amount = 5;
+        reset_seq.start(env.agent.sequencer);
 
         // Main Sequence (Main Stimulus Generation Sequence)
-        `uvm_info("TEST", "Executing Main Stimulus Sequence ...", UVM_LOW);
+        `uvm_info("TEST", "Executing Random Stimulus Sequence ...", UVM_LOW);
+        
+        random_seq = FIFO_Random_Sequence::type_id::create("random_sequence");
+        random_seq.randomize();
+        random_seq.start(env.agent.sequencer);
+        
+        // Resetting the DUT before procceding with the next stimulus
+        reset_seq.start(env.agent.sequencer);
 
-        seq.reset_flag = 0;
-        seq.trans_amount = 32;
-        seq.start(env.agent.sequencer);
+        // Boundary Sequence (Boundary Stimulus Generation Sequence)
+        `uvm_info("TEST", "Executing Random Stimulus Sequence ...", UVM_LOW);
+        
+        boundary_seq = FIFO_Boundary_Sequence::type_id::create("boundary_sequence");
+        boundary_seq.randomize();
+        boundary_seq.start(env.agent.sequencer);
 
         phase.drop_objection(this);
     endtask

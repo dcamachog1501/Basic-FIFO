@@ -72,7 +72,7 @@ class FIFO_Driver extends uvm_driver #(FIFO_Seq_Item#(FIFO_WIDTH));
         fifo_if.drv_mp.drv_cb.LOAD      <= 0;
         fifo_if.drv_mp.drv_cb.POP       <= 0;
         fifo_if.drv_mp.drv_cb.VALUE_IN  <= 0;
-        fifo_if.drv_mp.drv_cb.VALID_DRV <= 0;
+        fifo_if.drv_mp.drv_cb.VALID_DRV <= 1;
 
     endtask
 
